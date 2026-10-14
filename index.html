@@ -311,6 +311,7 @@ textarea.hlcopy{outline:3px solid var(--warn);background:var(--accent-soft);font
 #dlpanel a.btn{text-decoration:none}
 label.consent{border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:10px 12px}
 label.consent span span{font-weight:400;font-size:.9rem}
+.wherecode{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:10px 14px;font-size:.92rem}
 </style>
 
 <header class="top"><div class="wrap">
@@ -1861,28 +1862,27 @@ async function readTransferCode(text){
   return d}
 const XSTEP=(n,t,d)=>`<li><span class="xn">${n}</span><div><b>${t}</b><span class="def">${d}</span></div></li>`;
 function transferExportHTML(){return`<details class="verify xfer" id="xferbox"><summary>Moving to another device? Copy a transfer code</summary>
-  <div class="stack" style="margin-top:10px">
-    <p class="def">Your work is saved only in this browser. To continue on a laptop, PC, or another browser, move it with a transfer code.</p>
-    <ol class="xsteps">
-      ${XSTEP(1,"Copy your transfer code","Select <b>Copy transfer code</b> below. A long code starting with CPL-TRANSFER-1 is copied. If it is not copied, it appears highlighted in the box: press Ctrl+C or Cmd+C, or press and hold it and choose Copy.")}
-      ${XSTEP(2,"Save it where you can reach it","Paste the code into an email or a note to yourself, or select <b>Share code</b> on a phone or tablet. Copy the whole code: a partial code will not import.")}
-      ${XSTEP(3,"Open the lab on the other device","Open the same Care Plan Lab link in a regular window, not private or incognito.")}
-      ${XSTEP(4,"Import the code","On the first page, open <b>Moving from another device? Import a transfer code</b>, paste the whole code, and select <b>Import</b>. Your attempts and scores open there.")}
-    </ol>
+  <div class="stack" style="margin-top:12px">
+    <p class="def">Your work is saved only in this browser. To continue on a laptop, PC, tablet, phone, or another browser, copy your transfer code here and import it there.</p>
+    ${stepCards([[1,"xcopy","Copy your transfer code","Select <b>Copy transfer code</b> below. A long code that starts with CPL-TRANSFER-1 is copied."],
+      [2,"xsave","Save it where you can reach it","Paste the whole code into an email or note to yourself, or select <b>Share code</b> on a phone or tablet."],
+      [3,"xopen","Open the lab on the other device","Open the same Care Plan Lab link there, in a regular window (not private or incognito)."],
+      [4,"ximport","Import the code","On the first page there, open <b>Moving from another device? Import a transfer code</b>, paste the whole code, and select <b>Import</b>."]])}
+    <p class="notice"><b>Copy the whole code, to the very end.</b> A partial code will not import. If the code is not copied automatically, it appears highlighted in the box below: press Ctrl+C or Cmd+C, or press and hold it and choose Copy.</p>
     <div class="row"><button type="button" class="btn primary" data-act="xfercopy">Copy transfer code</button>
       ${typeof navigator!=="undefined"&&navigator.share?`<button type="button" class="btn" data-act="xfershare">Share code</button>`:""}</div>
     <textarea id="xferout" readonly rows="3" placeholder="Your code appears here after you select Copy transfer code." aria-label="Transfer code"></textarea>
     <p id="xfermsg" class="toast" aria-live="polite"></p>
   </div></details>`}
 function transferImportHTML(){return`<details class="verify xfer" id="ximbox"><summary>Moving from another device? Import a transfer code</summary>
-  <div class="stack" style="margin-top:10px">
-    <p class="def">Use this to continue on this device with work you started on another device.</p>
-    <ol class="xsteps">
-      ${XSTEP(1,"Find your code","Open the email or note where you saved the code that starts with CPL-TRANSFER-1, and copy all of it.")}
-      ${XSTEP(2,"Paste it here","Press and hold in the box below and choose Paste, or press Ctrl+V or Cmd+V.")}
-      ${XSTEP(3,"Select Import","Your attempts and scores open on this device. If this browser already has someone else's results, you are asked before they are replaced.")}
-      ${XSTEP(4,"Continue","Open your attempt to continue, or open your results.")}
-    </ol>
+  <div class="stack" style="margin-top:12px">
+    <p class="def">Use this to continue here with work you started on another device or browser.</p>
+    <div class="wherecode"><b>Where do I get the code?</b> On the device where you started: open the Care Plan Lab, enter your details, and on <b>Your attempts</b> open <b>Moving to another device? Copy a transfer code</b>. Select <b>Copy transfer code</b>, then email or message the whole code to yourself.</div>
+    ${stepCards([[1,"xcopy","Get the code on your first device","On <b>Your attempts</b>, open <b>Moving to another device?</b> and select <b>Copy transfer code</b>."],
+      [2,"xsave","Send it to yourself, then copy it here","Email or message the code to yourself. On this device, open that email or note and copy all of the code."],
+      [3,"ximport","Paste it and select Import","Press and hold in the box below and choose <b>Paste</b> (or Ctrl+V / Cmd+V), then select <b>Import</b>."],
+      [4,"xdone","Continue here","Your attempts and scores open on this device. Continue your attempt or open your results."]])}
+    <p class="def"><b>How to copy and paste:</b> Windows: Ctrl+C to copy, Ctrl+V to paste. Mac: Cmd+C and Cmd+V. Phones and tablets: press and hold, then choose Copy or Paste. If this browser already has someone else's results, you are asked before they are replaced.</p>
     <textarea id="ximin" rows="3" placeholder="Paste the whole code here (it starts with CPL-TRANSFER-1)" aria-label="Paste transfer code"></textarea>
     <div class="row"><button type="button" class="btn primary" data-act="xferimport">Import</button></div>
     <p id="ximmsg" class="toast" aria-live="polite"></p>
@@ -1950,6 +1950,26 @@ const DRAW={
     <text class="sv-wm" x="102" y="74" text-anchor="middle" transform="rotate(-38 102 66)" style="font-size:30px">82%</text>${SV_LINES(68,22,[40,64,58,70,48,66,60,70,52],9.5)}
     <rect class="sv-pdf" x="64" y="94" width="26" height="12" rx="2"/><text class="sv-bt" x="77" y="103" text-anchor="middle" style="font-size:7.5px">PDF</text>
     <g transform="translate(160 84)"><circle class="sv-good" r="16"/><path class="sv-tick" d="M0 -8 V6 M-6 0 L0 6 L6 0 M-8 10 H8"/></g>`,"A PDF page with a score watermark and a green download check")};
+/* transfer-code drawings (moving work between devices) */
+const XTILES=(y,score)=>[20,76,132].map((x,i)=>`<rect class="sv-det" x="${x}" y="${y}" width="48" height="26" rx="3"/><rect class="sv-txt" x="${x+6}" y="${y+6}" width="22" height="3" rx="1.5"/>${score?`<text class="sv-t" x="${x+6}" y="${y+20}" style="font-weight:700">${["82%","88%","--"][i]}</text>`:`<rect class="sv-txt" x="${x+6}" y="${y+14}" width="34" height="3" rx="1.5"/>`}`).join("");
+Object.assign(DRAW,{
+  xcopy:SV(`<rect class="sv-card" x="10" y="6" width="180" height="108" rx="6"/><text class="sv-h" x="20" y="21">Your attempts</text>${XTILES(27,false)}
+    <rect class="sv-det" x="20" y="60" width="160" height="46" rx="4"/><text class="sv-t" x="27" y="72" style="font-weight:700">&#9662; Moving to another device?</text>
+    <rect class="sv-btn" x="27" y="80" width="96" height="18" rx="3"/><text class="sv-bt" x="75" y="92.5" text-anchor="middle" style="font-size:8px">Copy transfer code</text>${SV_PTR(110,90)}`,"The attempts page with the Copy transfer code button and a pointer clicking it"),
+  xsave:SV(`<rect class="sv-card" x="10" y="8" width="180" height="104" rx="6"/><rect class="sv-bar" x="10" y="8" width="180" height="16" rx="6"/><rect class="sv-bar" x="10" y="16" width="180" height="8"/>
+    <text class="sv-tw" x="20" y="20">Email to yourself</text><text class="sv-t" x="20" y="38">To: me@school.edu</text><rect class="sv-txt" x="20" y="44" width="160" height="1"/>
+    ${SV_LINES(20,52,[90])}<rect class="sv-hl" x="18" y="60" width="164" height="22" rx="2"/><text class="sv-t" x="22" y="69" style="font-size:7px">CPL-TRANSFER-1.H4sIAAAAAAAAA3WQ</text><text class="sv-t" x="22" y="78" style="font-size:7px">...whole code, to the very end</text>
+    <rect class="sv-btn" x="138" y="90" width="42" height="15" rx="3"/><text class="sv-bt" x="159" y="100.5" text-anchor="middle">Send</text>${SV_PTR(166,99)}`,"An email to yourself with the whole transfer code pasted in"),
+  xopen:SV(`<rect class="sv-card" x="16" y="22" width="40" height="74" rx="7"/><rect class="sv-det" x="21" y="30" width="30" height="54" rx="2"/>${SV_LINES(24,36,[22,16,22,12],8)}
+    <path class="sv-ray" d="M64 59 H90 M84 53 L91 59 L84 65" style="fill:none"/><text class="sv-t" x="77" y="48" text-anchor="middle" style="font-size:7px;font-weight:700">code</text>
+    <rect class="sv-card" x="98" y="20" width="88" height="58" rx="4"/><rect class="sv-bar" x="102" y="24" width="80" height="10" rx="2"/><text class="sv-tw" x="106" y="31.5" style="font-size:6.5px">Care Plan Lab</text>${SV_LINES(106,42,[60,70,50],8)}
+    <path class="sv-card" d="M90 80 H194 L186 92 H98 Z"/>`,"A phone and a laptop with an arrow from the phone to the laptop, which has the Care Plan Lab open"),
+  ximport:SV(`<rect class="sv-card" x="10" y="8" width="180" height="104" rx="6"/><text class="sv-t" x="20" y="22" style="font-weight:700">&#9662; Import a transfer code</text>
+    <rect class="sv-field" x="20" y="34" width="160" height="40" rx="3"/><text class="sv-t" x="26" y="48" style="font-size:7px">CPL-TRANSFER-1.H4sIAAAAAAAA</text><text class="sv-t" x="26" y="58" style="font-size:7px">A3WQ...ending in .9f2c4e1a</text>
+    <rect x="134" y="56" width="40" height="15" rx="4" style="fill:var(--ink)"/><text x="154" y="66.5" text-anchor="middle" style="fill:var(--surface);font-size:8px;font-weight:700">Paste</text>
+    <rect class="sv-btn" x="20" y="84" width="50" height="18" rx="3"/><text class="sv-bt" x="45" y="96.5" text-anchor="middle">Import</text>${SV_PTR(58,94)}`,"The Import a transfer code box with the code pasted in and a pointer on the Import button"),
+  xdone:SV(`<rect class="sv-card" x="10" y="12" width="180" height="96" rx="6"/><text class="sv-h" x="20" y="28">Your attempts</text>${XTILES(36,true)}
+    <rect class="sv-okpill" x="20" y="74" width="132" height="22" rx="11"/>${SV_OK(33,85,7.5)}<text class="sv-okt" x="45" y="89" style="font-size:8.5px">Imported. Continue here.</text>`,"The attempts page on the new device with the attempts and scores showing and a green Imported check")});
 function stepCards(items){return`<div class="scards">${items.map(([n,d,t,x])=>`<figure class="scard">${DRAW[d]}<figcaption><span class="xn">${n}</span><div><b>${t}</b><span class="def">${x}</span></div></figcaption></figure>`).join("")}</div>`}
 
 /* ----- the card itself ----- */
@@ -2602,10 +2622,10 @@ function renderId(){
         <li>Download your PDF report and hand it in. It is mapped to the 2026 NCLEX-RN and NCLEX-PN test plans and to QSEN.</li>
         <li>${STANDALONE?"If the PDF will not download, open":"If the download is blocked (for example, a message says downloads are only available to members of an organization), open"} <b>Can't download? Submit your results card instead</b> under Downloads on your results page. Copy your results and paste all of the text, including the long code, into your course assignment.</li>
       </ol>
-      <p class="muted" style="font-size:.9rem">You have 3 attempts, and all of them must be finished within 24 hours of starting attempt 1. You can save and continue later. Your final score is the average of the attempts you submit. Your work is saved in this browser, so use the same device for all attempts.</p>
-      ${transferImportHTML()}
+      <p class="muted" style="font-size:.9rem">You have 3 attempts, and all of them must be finished within 24 hours of starting attempt 1. You can save and continue later. Your final score is the average of the attempts you submit. Your work is saved in this browser, so use the same device for all attempts. To switch devices, use a transfer code (see <b>Moving from another device?</b> below).</p>
     </section>
   </div>
+  <section class="panel stack" style="margin-top:24px" aria-label="Moving between devices">${transferImportHTML()}</section>
   <section class="panel stack dlarea" id="downloads" style="margin-top:24px" aria-labelledby="dlh"><h3 id="dlh">Downloads <span class="muted" style="font-weight:500;font-size:.9rem">for instructors</span></h3>
     ${learnerPdfBox("id")}
     ${verifyBox("id")}
