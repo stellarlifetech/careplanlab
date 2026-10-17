@@ -312,6 +312,19 @@ textarea.hlcopy{outline:3px solid var(--warn);background:var(--accent-soft);font
 label.consent{border:1px solid var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:10px 12px}
 label.consent span span{font-weight:400;font-size:.9rem}
 .wherecode{border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:10px 14px;font-size:.92rem}
+/* auscultation findings on sound cards */
+.ausc{border-top:1px dashed var(--line);padding-top:8px;display:flex;flex-direction:column;gap:6px}
+.ausc .eyebrow{font-size:.7rem}
+svg.au-strip{width:100%;height:auto;display:block}
+svg.au-strip text{font:600 9px var(--f-body);fill:var(--muted)}
+.au-in{fill:var(--accent-soft);stroke:var(--accent)} .au-ex{fill:var(--sunk);stroke:var(--muted)}
+.au-mk{fill:var(--accent)} .au-ln{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linejoin:round}
+.snd.heart .au-mk,.snd.heart .au-ln{fill:none;stroke:var(--heart)}
+.au-base{stroke:var(--line);stroke-width:1} .au-hb{fill:var(--heart)} .au-next{opacity:.35}
+.au-xt{fill:none;stroke:var(--heart);stroke-width:2} .au-mur{fill:var(--heart-soft);stroke:var(--heart);stroke-width:1}
+.reassess .au-hb{fill:var(--heart)}
+dl.ausc-d{display:grid;grid-template-columns:86px minmax(0,1fr);gap:3px 8px;margin:0;font-size:.86rem}
+dl.ausc-d dt{color:var(--muted);font-weight:600}dl.ausc-d dd{margin:0}
 </style>
 
 <header class="top"><div class="wrap">
@@ -1650,6 +1663,115 @@ const ecgReassessText=(att,L,out)=>{const id=idOf(att,L),t=roleOf(att,L),[k0,h0]
   const nm=x=>lc1(fund?(ECG_BASIC.find(b=>b.k===ecgBasic(x))||{}).name:RBY(x).name);
   return`Monitor: ${nm(k0)} at ${h0}/min before, ${nm(k)} at ${hr}/min now. ${why}`};
 
+/* ---------- Auscultation findings: each sound described as charted objective data (never by name) ----------
+   w = where (site and stethoscope use), t = when (timing), l = sounds like (pitch and quality), c = changes with.
+   Every class sees all four rows and a timing strip. g = group, used to pick a contrasting distractor cue. */
+const AUSC={
+ L01:{g:"norm",w:"Most of both lungs (peripheral lung fields), front and back",t:"Inspiration is about 3 times longer than expiration; expiration is barely heard",l:"Soft, low-pitched, rustling, like wind in the trees",c:"Same on both sides on every breath; no added sounds"},
+ L02:{g:"norm",w:"1st and 2nd intercostal spaces beside the sternum, and between the scapulae",t:"Inspiration and expiration are about equal in length",l:"Medium pitch and loudness, hollow and rustling",c:"Same on both sides; no added sounds"},
+ L03:{g:"norm",w:"Over the manubrium only",t:"Expiration is longer than inspiration, with a short pause between them",l:"Loud, high-pitched, hollow, tubular",c:"Heard only over the manubrium; no added sounds"},
+ L04:{g:"norm",w:"Over the trachea in the neck",t:"Inspiration and expiration about equal; both loud",l:"Very loud, harsh, high-pitched, like air blown through a pipe",c:"Heard only over the trachea; no added sounds"},
+ L05:{g:"cons",w:"Right lower lobe posteriorly, where soft breath sounds are expected",t:"Expiration as long as or longer than inspiration, with a pause between them",l:"Loud, high-pitched, hollow, tubular breath sounds",c:"Spoken words sound louder and clearer over this area; dull to percussion"},
+ L06:{g:"crk",w:"Both posterior lung bases",t:"Late inspiration",l:"Brief, high-pitched, popping sounds, like hair rolled between the fingers",c:"Do not clear with coughing"},
+ L07:{g:"crk",w:"Lower and middle lung fields over the affected area",t:"Mid-inspiration",l:"Moist, lower-pitched, louder popping sounds",c:"May change a little after coughing"},
+ L08:{g:"rh",w:"Over the large airways: trachea and main bronchi",t:"Continuous; mostly on expiration",l:"Low-pitched snoring or rumbling",c:"Often clear or change after coughing or suctioning"},
+ L09:{g:"rh",w:"Over the large airways on both sides",t:"Continuous, on inspiration and expiration",l:"Coarse, wet bubbling and gurgling",c:"Change after coughing or suctioning"},
+ L10:{g:"rh",w:"Over the large airways",t:"Continuous; mainly on expiration",l:"Low-pitched rumbling",c:"May clear with coughing"},
+ L11:{g:"wh",w:"All lung fields, both sides",t:"Continuous; mainly on expiration",l:"High-pitched, musical whistling",c:"Do not clear with coughing; may lessen after an inhaled bronchodilator"},
+ L12:{g:"rub",w:"Lower lateral chest wall on one side",t:"Inspiration and expiration",l:"Grating, creaking, like two pieces of leather rubbing",c:"Stops when the client holds their breath; does not clear with coughing"},
+ L13:{g:"str",w:"Loudest over the neck (trachea); heard even without a stethoscope",t:"Inspiration",l:"Loud, high-pitched crowing",c:"Does not clear with coughing; gets louder as the airway narrows"},
+ H01:{g:"norm",w:"Base: 2nd intercostal space, right and left of the sternum; diaphragm",t:"Two sounds per beat: S1, then S2",l:"\"lub-DUB\": S2 louder than S1",c:"Regular rate and rhythm; no extra sounds"},
+ H02:{g:"norm",w:"Apex: 5th intercostal space, left midclavicular line; diaphragm",t:"Two sounds per beat: S1, then S2",l:"\"LUB-dub\": S1 louder than S2",c:"Regular rate and rhythm; no extra sounds"},
+ H03:{g:"gal",w:"Apex: 5th intercostal space, left midclavicular line; bell, client turned to the left side",t:"Late diastole, just before S1",l:"Dull, low-pitched extra sound: a three-beat rhythm",c:"Louder with the client lying on the left side"},
+ H04:{g:"gal",w:"Apex: 5th intercostal space, left midclavicular line; bell, client turned to the left side",t:"Early diastole, just after S2",l:"Dull, low-pitched extra sound: a three-beat rhythm",c:"Louder with the client lying on the left side"},
+ H05:{g:"clk",w:"Apex (mitral area)",t:"Mid-systole, between S1 and S2",l:"Short, sharp, high-pitched click",c:"Moves earlier when the client stands and later when the client squats"},
+ H06:{g:"mur",w:"Apex (mitral area)",t:"Late systole, running up to S2",l:"Blowing, medium- to high-pitched murmur",c:"Starts earlier and lasts longer when the client stands"},
+ H07:{g:"mur",w:"Apex, spreading toward the left axilla",t:"Late systole, running up to S2",l:"Blowing, medium- to high-pitched murmur",c:"Starts earlier and lasts longer when the client stands"},
+ H08:{g:"mur",w:"Apex, spreading to the left axilla",t:"All of systole, from S1 to S2",l:"Blowing, high-pitched murmur, the same loudness throughout",c:"Does not change with breathing"},
+ H09:{g:"mur",w:"3rd intercostal space, left sternal border (Erb's point); client sitting up and leaning forward",t:"Early diastole: starts right after S2 and fades",l:"Soft, high-pitched, blowing, fading murmur",c:"Easier to hear after a full breath out, with the client leaning forward"},
+ H10:{g:"mur",w:"2nd intercostal space, right sternal border (aortic area)",t:"Both systole and diastole",l:"Harsh rising-then-falling murmur in systole, then a soft blowing murmur after S2 (\"to-and-fro\")",c:"Does not change with breathing"},
+ H11:{g:"clk",w:"2nd intercostal space, right or left sternal border (aortic or pulmonic area)",t:"Early systole, just after S1",l:"Sharp, high-pitched click",c:"Does not move with position"},
+ H12:{g:"mur",w:"Left sternal border",t:"Early systole; ends well before S2",l:"Soft, short, medium-pitched murmur",c:"Often softer when the client sits up"},
+ H13:{g:"mur",w:"2nd to 3rd intercostal space, left sternal border",t:"Early systole; ends well before S2",l:"Soft, short, medium-pitched murmur",c:"Often softer when the client sits up"},
+ H14:{g:"spl",w:"Pulmonic area: 2nd intercostal space, left sternal border",t:"S2 heard as two close parts on every beat",l:"\"lub-d-dub\": S2 split in two",c:"The split stays the same breathing in and breathing out"},
+ H15:{g:"spl",w:"Pulmonic area: 2nd intercostal space, left sternal border",t:"S2 heard as two parts, widely spaced",l:"\"lub-d--dub\": S2 widely split",c:"The split widens further when breathing in and narrows when breathing out"},
+ H16:{g:"rub",w:"Left lower sternal border, 3rd to 5th intercostal space; client leaning forward",t:"Up to three parts per beat, in systole and diastole",l:"Scratchy, grating, leathery",c:"Continues when the client holds their breath"},
+};
+/* Timing strips. Lung: [inspiration width, inspiration height, expiration width, expiration height, gap] plus overlays.
+   Heart: S1 and S2 heights plus extra sounds. All drawn with theme colors. */
+const AUSC_STRIP={
+ L01:{b:[190,12,60,5,4]},L02:{b:[125,10,125,10,6]},L03:{b:[95,12,145,14,22]},L04:{b:[125,14,125,14,8]},
+ L05:{b:[105,14,135,14,18]},
+ L06:{b:[170,8,100,6,10],o:[["dots","i",.72,1,1]]},L07:{b:[170,8,100,6,10],o:[["dots","i",.35,.75,0]]},
+ L08:{b:[170,8,100,6,10],o:[["wave","e",0,1,0]]},L09:{b:[170,8,100,6,10],o:[["wave","i",.1,1,0],["wave","e",0,1,0]]},L10:{b:[170,8,100,6,10],o:[["wave","e",0,1,0]]},
+ L11:{b:[170,8,100,6,10],o:[["wave","e",0,1,1]]},L12:{b:[170,8,100,6,10],o:[["zig","i",.15,1,0],["zig","e",0,.9,0]]},L13:{b:[170,8,100,6,10],o:[["wave","i",0,1,1]]},
+ H01:{s:[10,18]},H02:{s:[18,10]},H03:{s:[18,12],x:[["gal",232]]},H04:{s:[18,12],x:[["gal",168]]},H05:{s:[16,12],x:[["clk",92]]},
+ H06:{s:[16,12],x:[["clk",92],["plat",98,136]]},H07:{s:[16,12],x:[["plat",96,136]]},H08:{s:[16,12],x:[["plat",50,136]]},
+ H09:{s:[16,14],x:[["dec",148,215]]},H10:{s:[14,14],x:[["dia",50,134],["dec",148,205]]},H11:{s:[16,12],x:[["clk",54]]},
+ H12:{s:[16,12],x:[["dia",50,96]]},H13:{s:[16,12],x:[["dia",50,96]]},H14:{s:[16,0],x:[["s2",134],["s2",150]]},H15:{s:[16,0],x:[["s2",130],["s2",156]]},
+ H16:{s:[12,10],x:[["zig",58,110],["zig",160,200],["zig",222,240]]},
+};
+const auscLevel=()=>"fund";
+function auscRows(id,lvl){const a=AUSC[id];if(!a)return[];
+  return lvl==="ms"?[["Where",a.w],["Changes with",a.c]]:[["Where",a.w],["When",a.t],["Sounds like",a.l],["Changes with",a.c]]}
+function auscStrip(id){const S=AUSC_STRIP[id];if(!S)return"";
+  if(S.b){const[wi,hi,we,he,gap]=S.b,x0=12,y=26,xe=x0+wi+gap;let o="";
+    (S.o||[]).forEach(([k,ph,f0,f1,hiP])=>{const xs=ph==="i"?x0:xe,w=ph==="i"?wi:we,a=xs+w*f0,b=xs+w*f1,yy=hiP?10:14;
+      if(k==="dots"){for(let x=a+3,i=0;x<b-1;x+=6,i++)o+=`<circle cx="${x.toFixed(1)}" cy="${yy+(i%2?3:0)}" r="2.3" class="au-mk"/>`}
+      else if(k==="wave"){let d=`M${a.toFixed(1)} ${yy}`;const amp=hiP?2:3.5,step=hiP?4:7;for(let x=a,i=0;x<b;x+=step,i++)d+=` Q${(x+step/2).toFixed(1)} ${yy+(i%2?amp:-amp)} ${Math.min(x+step,b).toFixed(1)} ${yy}`;o+=`<path d="${d}" class="au-ln"/>`}
+      else if(k==="zig"){let d=`M${a.toFixed(1)} ${yy}`;for(let x=a,i=0;x<b;x+=5,i++)d+=` L${Math.min(x+5,b).toFixed(1)} ${yy+(i%2?-4:4)}`;o+=`<path d="${d}" class="au-ln"/>`}});
+    return`<svg class="au-strip" viewBox="0 0 300 50" aria-hidden="true"><rect x="${x0}" y="${y-hi/2+6}" width="${wi}" height="${hi}" rx="${Math.min(hi/2,6)}" class="au-in"/><rect x="${xe}" y="${y-he/2+6}" width="${we}" height="${he}" rx="${Math.min(he/2,6)}" class="au-ex"/>
+      ${o}<text x="${x0+wi/2}" y="48" text-anchor="middle">Breathing in</text><text x="${xe+we/2}" y="48" text-anchor="middle">Breathing out</text></svg>`}
+  const[h1,h2]=S.s,base=34,bar=(x,h,cls)=>h?`<rect x="${x-4}" y="${base-h}" width="8" height="${h}" rx="2" class="${cls}"/>`:"";let o="";
+  (S.x||[]).forEach(([k,a,b])=>{
+    if(k==="gal")o+=`<rect x="${a-4}" y="${base-9}" width="8" height="9" rx="2" class="au-xt"/>`;
+    else if(k==="clk")o+=`<rect x="${a-1.5}" y="${base-16}" width="3" height="16" rx="1" class="au-hb"/>`;
+    else if(k==="s2")o+=bar(a,12,"au-hb");
+    else if(k==="plat")o+=`<rect x="${a}" y="${base-9}" width="${b-a}" height="9" class="au-mur"/>`;
+    else if(k==="dec")o+=`<path d="M${a} ${base-12} L${b} ${base} L${a} ${base} Z" class="au-mur"/>`;
+    else if(k==="dia")o+=`<path d="M${a} ${base} L${(a+b)/2} ${base-12} L${b} ${base} Z" class="au-mur"/>`;
+    else if(k==="zig"){let d=`M${a} ${base-6}`;for(let x=a,i=0;x<b;x+=4,i++)d+=` L${Math.min(x+4,b)} ${base-6+(i%2?-4:4)}`;o+=`<path d="${d}" class="au-ln"/>`}});
+  return`<svg class="au-strip" viewBox="0 0 300 50" aria-hidden="true"><line x1="10" y1="${base}" x2="290" y2="${base}" class="au-base"/>
+    ${bar(40,h1,"au-hb")}${bar(140,h2,"au-hb")}${o}${bar(250,h1,"au-hb au-next")}
+    <text x="40" y="47" text-anchor="middle">S1</text><text x="140" y="47" text-anchor="middle">S2</text><text x="250" y="47" text-anchor="middle">S1</text>
+    <text x="90" y="9" text-anchor="middle">systole</text><text x="195" y="9" text-anchor="middle">diastole</text></svg>`}
+function auscHTML(id,lvl,title){const r=auscRows(id,lvl);if(!r.length)return"";
+  return`<div class="ausc"><span class="eyebrow">${esc(title||"Auscultation findings (objective data)")}</span>${lvl==="ms"?"":auscStrip(id)}
+    <dl class="ausc-d">${r.map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>`}
+/* One-line objective cue for the cue list; normal sounds add none (they are not evidence for the problem). */
+const AUSC_Q={
+"L05": "Loud, hollow, tubular breath sounds over the right lower lobe posteriorly",
+"L06": "Fine, high-pitched pops at both posterior bases, late inspiration, not cleared by coughing",
+"L07": "Moist, low-pitched pops in the lower lung fields, mid-inspiration",
+"L08": "Low-pitched snoring sounds over the large airways that change after coughing",
+"L09": "Coarse, wet gurgling over the large airways on inspiration and expiration",
+"L10": "Low-pitched rumbling over the large airways on expiration",
+"L11": "High-pitched musical whistling in all lung fields on expiration",
+"L12": "Grating, creaking sound over the lower lateral chest that stops with breath-holding",
+"L13": "Loud, high-pitched crowing over the neck on inspiration",
+"H03": "Low-pitched extra sound at the apex just before S1",
+"H04": "Low-pitched extra sound at the apex just after S2",
+"H05": "Sharp click at the apex in mid-systole",
+"H06": "Blowing murmur at the apex in late systole",
+"H07": "Blowing murmur at the apex in late systole, spreading toward the axilla",
+"H08": "Blowing murmur at the apex through all of systole, spreading to the axilla",
+"H09": "Soft, fading, blowing murmur at Erb's point right after S2",
+"H10": "Harsh systolic murmur and soft diastolic murmur at the aortic area",
+"H11": "Sharp, high-pitched click at the base just after S1",
+"H12": "Soft, short murmur at the left sternal border in early systole",
+"H13": "Soft, short murmur at the 2nd to 3rd left intercostal space in early systole",
+"H14": "S2 split in two at the pulmonic area, the same breathing in and out",
+"H15": "S2 widely split at the pulmonic area, wider on inspiration",
+"H16": "Scratchy, grating sound at the left lower sternal border that continues with breath-holding"
+};
+const AUSC_NORMAL=["N_LUNG","N_HEART"];
+function auscCue(id){return AUSC_Q[id]?"Auscultation: "+lc1(AUSC_Q[id]):""}
+function auscCuesFor(id,lvl){const s=SBY[id];if(!s||!AUSC[id]||AUSC_NORMAL.includes(s.fam))return null;
+  const pool=SOUNDS.filter(x=>x.cat===s.cat&&AUSC[x.id]&&!AUSC_NORMAL.includes(x.fam)&&AUSC[x.id].g!==AUSC[id].g&&AUSC[x.id].w!==AUSC[id].w);
+  const d=pool.length?pool[randInt(pool.length)].id:null;
+  return{ok:auscCue(id,lvl),x:d?auscCue(d,lvl):""}}
+const auscText=id=>{const a=AUSC[id];return a?`${a.w}. ${a.t}. ${a.l}. ${a.c}.`:""};
+
 /* ---------- Clinical data: vital signs, calculated values, and lab results, with interpretations ----------
    Each client has baseline data. On reassessment the data follow the client's response (better, same, worse).
    Heart rate always comes from the cardiac monitor so the numbers and the strip agree.
@@ -2320,7 +2442,8 @@ function drawSet(){
       care:buildCare(vfamOf(ids[i],t),t,c,prof[L]),
       order:pickOrder(vfamOf(ids[i],t),t),orderActs:shuffle(Object.values(ORDER_ACTS)),
       concl:shuffle(Object.values(CONCL)),
-      ev:shuffle(EVAL_OPTIONS.map(o=>o.t))}});
+      ev:shuffle(EVAL_OPTIONS.map(o=>o.t))};
+    const au=auscCuesFor(ids[i],"fund");if(au){opts[L].ausc=au;opts[L].cues.o=shuffle(opts[L].cues.o.concat([au.ok],au.x?[au.x]:[]))}});
   const sbarL=LET[randInt(5)], other=pick(LET.filter(x=>x!==sbarL),1)[0];
   const sb=sbarParts(ids,roles,sbarL,other);opts.sbar=shuffle([sb.S,sb.B,sb.A,sb.R,sb.X]);
   opts.pages=shuffle(Object.keys(PAGES));opts.breath=true;opts.ecg=true;opts.ecgLevel=ecgLevelOf(ctx.info);
@@ -2347,7 +2470,7 @@ function reassessOutcome(att,L){const a=att.answers.snd[L],c=caseOf(att,L);
 function reassessSound(att,L,out){const id=idOf(att,L),f=vfamOf(id,roleOf(att,L));return(REASSESS_SOUND[out]&&REASSESS_SOUND[out][f])||id}
 function reassessText(att,L,out){const f=SBY[idOf(att,L)].fam;return REASSESS_TEXT[out]+(STRUCTURAL.includes(f)?" The extra heart sound or murmur comes from the heart's structure and does not go away with nursing care, so judge the client's other findings.":"")+(att.opts&&att.opts.ecg?" "+ecgReassessText(att,L,out):"")}
 const readyToReassess=(att,L)=>soundChecks(att,L).filter(x=>!/Reassess|conclusion|evaluate/i.test(x[0])).every(x=>x[1]);
-const cueKey=(att,L)=>allCues(caseOf(att,L)).concat((att.opts[L]||{}).voiceOk||[]);
+const cueKey=(att,L)=>allCues(caseOf(att,L)).concat((att.opts[L]||{}).voiceOk||[],((att.opts[L]||{}).ausc||{}).ok?[att.opts[L].ausc.ok]:[]);
 const allCues=c=>GROUPS.flatMap(([g])=>c.cues[g]);
 
 /* ---------- storage (this browser only) ---------- */
@@ -2702,6 +2825,7 @@ function soundView(att,L){
       <div class="snd ${s.cat==="heart"?"heart":""}">
         <div class="head"><span class="letter">Sound ${L}</span><span class="cat ${s.cat}">${s.cat==="lung"?"Lung sound":"Heart sound"}</span></div>
         <audio controls preload="none" src="${mediaUrl(`a/${id}.mp3`)}"></audio>
+        ${auscHTML(id,auscLevel(att))}
         <label class="f">What sound is this? <span class="hint">Only ${s.cat} sounds are listed</span>
           <select id="snd_${L}_g" data-k="snd.${L}.g">${opt("","Choose...",a.g)}${pool.map(x=>opt(x.id,x.name,a.g)).join("")}</select></label>
       </div>
@@ -2785,6 +2909,7 @@ function reassessHTML(att,L){const a=att.answers.snd[L];
   const sid=reassessSound(att,L,a.re);
   return`<div class="reassess on"><b>Reassessment after your interventions</b>
     <audio controls preload="auto" src="${mediaUrl(`a/${sid}.mp3`)}"></audio>
+    ${auscHTML(sid,auscLevel(att),"Auscultation findings now")}
     ${att.opts.ecg?ecgReassessHTML(att,L,a.re):""}
     ${clinCompareHTML(att,L,a.re)}
     <p>${esc(reassessText(att,L,a.re))}</p>
@@ -2811,6 +2936,7 @@ function priorityPanel(att){const a=att.answers.sbar,L=att.sbarL,c=caseOf(att,L)
       <div class="snd ${sd.cat==="heart"?"heart":""}">
         <div class="head"><span class="letter">Sound ${L}</span><span class="cat ${sd.cat}">${sd.cat==="lung"?"Lung sound":"Heart sound"}</span></div>
         <audio controls preload="none" src="${mediaUrl(`a/${id}.mp3`)}"></audio>
+        ${auscHTML(id,auscLevel(att))}
         <span class="pill prog">${T.name} care plan</span>
       </div>
       <div class="panel stack casecard"><span class="eyebrow">Client profile for this sound</span><h3>${esc(c.client)}</h3><p>${esc(c.story)}</p><dl class="prof">${profRows(att,L).map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl></div>
@@ -2836,7 +2962,7 @@ function feedbackPanel(att,L){const g=grade(att),p=g.per[L],T=TBY[p.t],m=planMet
     <p><b>Your statement:</b> ${statementHTML(att,L)}</p>
     <div class="tbl"><table><thead><tr><th>Item</th><th>Your answer</th><th>Correct answer</th><th>Points</th></tr></thead><tbody>
       ${rows(att,g,L).map(r=>`<tr><td><b>${esc(r.item)}</b></td><td>${esc(r.yours)}</td><td>${esc(r.key)}</td><td class="num"><span class="${cls(r.res)}">${r.pts}/${r.max}</span></td></tr>`).join("")}</tbody></table></div>
-    <div><b>Rationale</b><ul><li>${esc(SBY[p.id].name)}: ${esc(SBY[p.id].mean)}</li><li>${esc(p.c.why)}</li>${reassessWhy(att,L)?`<li>${esc(reassessWhy(att,L))}</li>`:""}</ul></div>
+    <div><b>Rationale</b><ul><li>${esc(SBY[p.id].name)}: ${esc(SBY[p.id].mean)}</li>${AUSC[p.id]?`<li>What you heard: ${esc(auscText(p.id))}</li>`:""}<li>${esc(p.c.why)}</li>${reassessWhy(att,L)?`<li>${esc(reassessWhy(att,L))}</li>`:""}</ul></div>
     <p class="def">This care plan: competency ${m.comp}% (${compLevel(m.comp)}); client ${m.kind.toLowerCase()} risk ${m.risk}% (${riskLevel(m.risk)}).</p>
     <div><button class="btn primary" data-act="nextplan">${next==="P"?"Continue to the SBAR report":`Continue to Sound ${next}`}</button></div>
   </section>`}
@@ -2907,7 +3033,7 @@ function renderResultsInner(){
       <div class="tbl"><table><thead><tr><th>Item</th><th>Your answer</th><th>Correct answer</th><th>Points</th></tr></thead><tbody>
       ${rows(att,g,L).map(r=>`<tr><td><b>${esc(r.item)}</b></td><td>${esc(r.yours)}</td><td>${esc(r.key)}</td><td class="num"><span class="${cls(r.res)}">${r.pts}/${r.max}</span></td></tr>`).join("")}
       </tbody></table></div>
-      <div><b>Rationale</b><ul><li>${esc(SBY[p.id].name)}: ${esc(SBY[p.id].mean)}</li><li>${esc(p.c.why)}</li>${reassessWhy(att,L)?`<li>${esc(reassessWhy(att,L))}</li>`:""}</ul></div></div>`}).join("");
+      <div><b>Rationale</b><ul><li>${esc(SBY[p.id].name)}: ${esc(SBY[p.id].mean)}</li>${AUSC[p.id]?`<li>What you heard: ${esc(auscText(p.id))}</li>`:""}<li>${esc(p.c.why)}</li>${reassessWhy(att,L)?`<li>${esc(reassessWhy(att,L))}</li>`:""}</ul></div></div>`}).join("");
   app().innerHTML=`<div class="row" style="justify-content:space-between;margin-bottom:12px">
       <button class="btn link" data-act="home">Back to attempts</button>
       <span class="eyebrow">${esc(v.name)} &middot; ${esc(ctx.labId)} &middot; Attempt ${att.n} &middot; Set ${esc(att.code)}</span></div>
@@ -3017,7 +3143,7 @@ function buildPDF(){
     para("Your diagnosis statement: "+(statementText(att,L)||"(none)"),9.5,true);y+=8;
     table(["Item","Your answer","Correct answer","Points"],rows(att,g,L).map(r=>[r.item,r.yours,r.key,`${r.pts}/${r.max}`]),[1.1,2.4,2.4,0.6],{boldCol:0,size:7.8});
     para("Rationale",10,true);
-    para(`- ${SBY[p.id].name}: ${SBY[p.id].mean}`,9.5);para("- "+p.c.why,9.5);if(reassessWhy(att,L))para("- "+reassessWhy(att,L),9.5)});
+    para(`- ${SBY[p.id].name}: ${SBY[p.id].mean}`,9.5);if(AUSC[p.id])para("- What you heard: "+auscText(p.id),9.5);para("- "+p.c.why,9.5);if(reassessWhy(att,L))para("- "+reassessWhy(att,L),9.5)});
   d.addPage();y=top;heading("How the sounds were matched to care plan types");
   para("Each sound is ranked by urgency. The most urgent sound gets the highest-priority care plan: an actual (problem-focused) problem first, then a syndrome, a possible problem, a risk, and health promotion.",9.5);y+=6;
   table(["Sound","Finding","Urgency","Care plan type (priority)"],matchRows(att),[0.6,2.4,1.6,1.8],{boldCol:0});
