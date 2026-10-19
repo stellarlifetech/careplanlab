@@ -2645,25 +2645,23 @@ function fmtDT(iso){if(!iso)return"--";const o={month:"numeric",day:"numeric",ye
 function duration(a,b){if(!a||!b)return"--";let s=Math.max(0,Math.round((new Date(b)-new Date(a))/1000));const h=Math.floor(s/3600);s-=h*3600;const m=Math.floor(s/60);s-=m*60;
   return[h?`${h} hr`:"",m?`${m} min`:"",`${s} sec`].filter(Boolean).join(" ")}
 function infoRows(att){const i=ctx.info;return[["School or Organization",i.school],["Program",i.program||"--"],["Course Code",i.ccode],["Course Title",i.ctitle],["Semester & Academic Year",i.term],["Instructor",i.instructor],["Name",ctx.name],["Student ID",i.sid],["Email",i.email],
-  ["Lab ID",ctx.labId],["Sound set",att.code],["24-hour window",windowStart()?`${fmtDT(windowStart())} to ${fmtDT(deadline().toISOString())}`:"--"],["Started",fmtDT(att.startedAt)],["Submitted",fmtDT(att.submittedAt)+(att.autoSubmitted?" (automatic, time ended)":"")],["Duration",duration(att.startedAt,att.submittedAt)],["Questions Answered",`${answeredCount(att)} / ${answerTotal(att)}`],...(ctx.info.consentAt?[["Results sent to instructor's spreadsheet",`Consent given ${fmtDT(ctx.info.consentAt)}`]]:[])]}
+  ["Lab ID",ctx.labId],["Sound set",att.code],["Started",fmtDT(att.startedAt)],["Submitted",fmtDT(att.submittedAt)+(att.autoSubmitted?" (automatic, time ended)":"")],["Duration",duration(att.startedAt,att.submittedAt)],["Questions Answered",`${answeredCount(att)} / ${answerTotal(att)}`],...(ctx.info.consentAt?[["Results sent to instructor's spreadsheet",`Consent given ${fmtDT(ctx.info.consentAt)}`]]:[])]}
 function infoCard(att){return`<div class="infocard">${infoRows(att).map(([k,v])=>`<div><span>${esc(k)}</span><b>${esc(v||"--")}</b></div>`).join("")}</div>`}
 function renderWho(){const w=$("#who");if(!w)return;
   const ol=$("#orgLine");if(ol){const c=ctx.info&&ctx.info.cohortId?cohortById(ctx.info.cohortId):null;ol.textContent=c?`${c.school} \u00b7 ${c.program} \u00b7 ${c.ccode} ${c.ctitle}`:(ctx.info&&ctx.info.school?ctx.info.school:"");ol.hidden=!ol.textContent}
   const ib=ctx.isInstructor?`<button class="btn" data-act="adminopen">Instructor dashboard</button>`:"";
   w.innerHTML=ctx.labId?`<span class="muted">Student</span><b>${esc(ctx.name)}</b><span class="pill">ID ${esc(ctx.info.sid||"")}</span><span class="pill code">${esc(ctx.labId)}</span><button class="btn link" data-act="switch">Not you?</button>${ib}`:ib;}
-/* ---------- 24-hour window: starts when attempt 1 starts; every attempt must be finished before it ends ---------- */
+/* ---------- No time limit: attempts never expire. (Old attempts that were auto-submitted under the former 24-hour rule keep that note.) ---------- */
 const WINDOW_MS=24*3600*1000;
 function windowStart(){const t=Object.values(ctx.attempts).map(a=>a.startedAt).filter(Boolean).sort()[0];return t||null}
 function deadline(){const s=windowStart();return s?new Date(new Date(s).getTime()+WINDOW_MS):null}
-function expired(){const d=deadline();return!!d&&(ctx.clockAt||Date.now())>=d.getTime()}
+function expired(){return false}
 function timeLeft(){const d=deadline();if(!d)return"";let ms=Math.max(0,d-Date.now());const h=Math.floor(ms/3600000);ms-=h*3600000;const m=Math.floor(ms/60000);return`${h} hr ${m} min`}
 /* when time runs out, an unfinished attempt is submitted automatically with the answers it has (blank items score 0) */
 function enforceDeadline(){if(!expired())return false;let changed=false;
   Object.values(ctx.attempts).forEach(a=>{if(a.status==="in_progress"){a.status="submitted";a.autoSubmitted=true;a.submittedAt=isoSec(deadline().toISOString());const g=grade(a);a.score={total:g.total,max:g.max,pct:g.pct};changed=true}});
   if(changed)saveNow();return changed}
-function windowBanner(){const d=deadline();if(!d)return`<div class="timebox"><b>24-hour limit</b><span>Your 24 hours start when you begin attempt 1. All attempts must be finished within that time.</span></div>`;
-  if(expired())return`<div class="timebox over"><b>Time is up</b><span>Your 24-hour window ended ${esc(fmtDT(d.toISOString()))}. No more attempts can be started or changed.</span></div>`;
-  return`<div class="timebox"><b>Time left: <span class="timeleft">${timeLeft()}</span></b><span>All attempts must be finished by ${esc(fmtDT(d.toISOString()))}. You can save and come back on this device any time before then.</span></div>`}
+function windowBanner(){return`<div class="timebox"><b>No time limit</b><span>Take your time. You can save and continue later on this device whenever you need to. Check your course for the assignment due date.</span></div>`}
 /* Attempts saved by earlier versions of the lab lack newer fields; fill them in so old work still opens. */
 function upgradeAttempt(att){
   if(!att||!att.ids||!att.roles||!att.opts)return false;
@@ -2693,7 +2691,7 @@ function upgradeAttempt(att){
 function upgradeAll(){let bad=[];Object.entries(ctx.attempts||{}).forEach(([n,a])=>{try{if(!upgradeAttempt(a))bad.push(n)}catch(e){bad.push(n)}});
   bad.forEach(n=>delete ctx.attempts[n]);return bad.length}
 /* The PDF report opens only when the lab is final: attempt 3 is submitted, the student makes an earlier attempt final,
-   or the 24-hour window ends. The final score is the average of the submitted attempts. */
+   The final score is the average of the submitted attempts. */
 function isFinal(){const subs=Object.values(ctx.attempts).filter(a=>a.status==="submitted");
   return subs.length>0&&!Object.values(ctx.attempts).some(a=>a.status==="in_progress")&&(!!ctx.finalized||subs.length>=MAXATT||expired())}
 function render(){try{renderInner();sheetSync()}catch(e){console.error(e);
@@ -2745,7 +2743,7 @@ function renderId(){
         <li>Download your PDF report and hand it in. It is mapped to the 2026 NCLEX-RN and NCLEX-PN test plans and to QSEN.</li>
         <li>${STANDALONE?"If the PDF will not download, open":"If the download is blocked (for example, a message says downloads are only available to members of an organization), open"} <b>Can't download? Submit your results card instead</b> under Downloads on your results page. Copy your results and paste all of the text, including the long code, into your course assignment.</li>
       </ol>
-      <p class="muted" style="font-size:.9rem">You have 3 attempts, and all of them must be finished within 24 hours of starting attempt 1. You can save and continue later. Your final score is the average of the attempts you submit. Your work is saved in this browser, so use the same device for all attempts. To switch devices, use a transfer code (see <b>Moving from another device?</b> below).</p>
+      <p class="muted" style="font-size:.9rem">You have 3 attempts and no time limit. You can save and continue later. Your final score is the average of the attempts you submit. Your work is saved in this browser, so use the same device for all attempts. To switch devices, use a transfer code (see <b>Moving from another device?</b> below).</p>
     </section>
   </div>
   <section class="panel stack" style="margin-top:24px" aria-label="Moving between devices">${transferImportHTML()}</section>
@@ -2779,7 +2777,7 @@ function renderHome(){
       <ul style="margin:0;padding-left:1.2em" class="stack">
         <li>Use headphones and play each sound more than once.</li>
         <li>Your work saves in this browser as you go. Use "Save and continue later" to stop and come back on the same device.</li>
-        <li>Everything must be finished within 24 hours of starting attempt 1. An unfinished attempt is submitted automatically when time runs out.</li>
+        <li>There is no time limit. Finish your attempts before the due date your instructor gives you.</li>
         ${ctx.storageOk?"":"<li style='color:var(--bad)'>This browser is not saving your work. Finish each attempt in one sitting and download your PDF before closing the page.</li>"}
       </ul>
     </section>
@@ -2813,7 +2811,7 @@ function renderWorkInner(){
     ${metersStrip(att)}
     <div id="tabpanel">${att.pendingFb?feedbackPanel(att,att.pendingFb):ctx.review?reviewPanel(att):(ctx.tab==="P"?priorityPanel(att):soundView(att,ctx.tab))}</div>
     <div class="bar">
-      <div class="row" style="gap:10px 16px"><span class="pill prog">Time left: <span class="timeleft">${timeLeft()}</span></span><span id="savestate" class="toast">${esc(ctx.saveState)}</span><button class="btn" data-act="saveexit">Save and continue later</button></div>
+      <div class="row" style="gap:10px 16px"><span id="savestate" class="toast">${esc(ctx.saveState)}</span><button class="btn" data-act="saveexit">Save and continue later</button></div>
       <div class="row" id="submitzone">${submitZone(att)}</div>
     </div>`;
 }
